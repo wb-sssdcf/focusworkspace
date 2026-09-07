@@ -7,17 +7,6 @@
 <title>生活工作台 · Orbit Life</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script>
-/* ===== 高德地图配置区（求职通勤模块）=====
- * 申请于高德开放平台，域名白名单: wb-sssdcf.github.io
- * 官方引入 script（由 loadAMapScript 按需注入，URL 与本行一致）:
- *   https://webapi.amap.com/maps?v=2.0&key=26a643d5cee65405df0cfd2d2d38984a&plugin=AMap.Driving,AMap.Transfer,AMap.Geocoder&securityJsCode=SECURITY_JS_CODE
- * SECURITY_JS_CODE 请填入高德"安全密钥"，填入后自动追加到 script URL；
- * 留空时不追加 securityJsCode 参数（页面功能不受影响，仅地图调用会失败并提示）。
- */
-const AMAP_KEY='26a643d5cee65405df0cfd2d2d38984a';
-const SECURITY_JS_CODE='';
-const AMAP_PLUGINS='AMap.Driving,AMap.Transfer,AMap.Geocoder';
-const AMAP_BASE_URL='https://webapi.amap.com/maps?v=2.0';
 </script>
 <style>
 :root{
@@ -310,16 +299,10 @@ body{
 .commute-home input{flex:1;min-width:200px}
 .commute-home-status{font-size:12px;color:var(--mist);margin-top:8px}
 .commute-job-addr{font-size:12px;color:var(--mist);margin:2px 0 8px;word-break:break-all}
-.commute-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.commute-btns .btn{flex:1;min-width:120px;padding:7px 10px;font-size:13px;justify-content:center}
-.commute-result-stats{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
-.commute-stat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:130px;flex:1}
-.commute-stat .k{font-size:12px;color:var(--mist);margin-bottom:2px}
-.commute-stat .v{font-size:20px;font-weight:800;color:var(--primary)}
-.commute-map{width:100%;height:320px;border-radius:14px;overflow:hidden;background:var(--card2);border:1px solid var(--line);position:relative}
-.commute-map .map-tip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mist);font-size:13px;text-align:center;padding:0 20px;z-index:1;pointer-events:none}
-.commute-note{font-size:12px;color:var(--mist);margin-top:10px;line-height:1.6}
-.commute-note b{color:var(--ink)}
+.commute-status{display:inline-block;font-size:11px;line-height:1;padding:4px 8px;border-radius:999px;color:#fff;background:var(--mist)}
+.commute-job-note{font-size:12px;color:var(--mist);line-height:1.5;white-space:pre-line;word-break:break-word}
+.commute-meta{font-size:11px;color:var(--mist);margin:6px 0 2px}
+.commute-meta .dot{margin:0 6px;color:var(--line)}
 </style>
 </head>
 <body>
@@ -599,33 +582,23 @@ body{
       <section class="page" id="page-commute">
         <div class="card">
           <div class="card-h">
-            <h2>🏠 家庭住址</h2>
-            <span class="sub">通勤计算以这里为起点</span>
+            <h2>🏠 家庭地址</h2>
+            <span class="sub">常驻 / 家庭地址，纯本地保存</span>
           </div>
           <div class="commute-home">
             <input type="text" id="commuteHomeInput" class="search-input" placeholder="输入常驻家庭地址，如：福州市晋安区福兴大道…">
-            <button class="btn p" onclick="saveCommuteHome()">保存住址</button>
+            <button class="btn p" onclick="saveCommuteHome()">保存</button>
           </div>
           <div class="commute-home-status" id="commuteHomeStatus"></div>
         </div>
 
         <div class="card" style="margin-top:12px">
-          <div class="card-h"><h2>💼 面试岗位</h2><span class="sub">记录公司、岗位与地址，一键算通勤</span></div>
+          <div class="card-h"><h2>💼 面试岗位</h2><span class="sub">记录公司 / 岗位 / 状态，本地即时保存</span></div>
           <div class="list-toolbar" style="border:none;padding:0;margin-bottom:12px">
             <input type="text" class="search-input" id="commuteSearch" placeholder="搜索公司 / 岗位 / 地址…" oninput="renderCommuteJobs()">
             <button class="btn p" onclick="openModal('commute')">➕ 添加岗位</button>
           </div>
           <div id="commuteJobsList"></div>
-        </div>
-
-        <div class="card" id="commuteResultCard" style="display:none;margin-top:12px">
-          <div class="card-h">
-            <h2 id="commuteResultTitle">通勤结果</h2>
-            <span class="sub" id="commuteResultMode"></span>
-          </div>
-          <div class="commute-result-stats" id="commuteResultStats"></div>
-          <div class="commute-map" id="commuteMap"><div class="map-tip">📍 正在加载地图…</div></div>
-          <div class="commute-note" id="commuteResultNote"></div>
         </div>
       </section>
 
@@ -3931,7 +3904,7 @@ const MODULES=[
   {id:'gift',name:'礼尚往来',icon:'🎁',color:'#c05656',desc:'送礼收礼'},
   {id:'social',name:'社交评级',icon:'💬',color:'#7a8c80',desc:'社交能量'},
   {id:'travel',name:'沿途印记',icon:'🗺️',color:'#6aa86a',desc:'旅行记录'},
-  {id:'commute',name:'求职通勤',icon:'💼',color:'#20517d',desc:'面试岗位与通勤'},
+  {id:'commute',name:'求职通勤',icon:'💼',color:'#20517d',desc:'岗位记录与通勤备注'},
 ];
 
 const STORE_KEYS={
@@ -4208,9 +4181,12 @@ const FORMS={
     {name:'diary',label:'旅行日记',type:'textarea',placeholder:'记录这次旅程…',full:true},
   ],
   commute:[
-    {name:'company',label:'公司名',type:'text',placeholder:'如 字节跳动'},
-    {name:'position',label:'岗位',type:'text',placeholder:'如 前端开发工程师'},
-    {name:'address',label:'公司地址',type:'text',placeholder:'填写完整地址，越精确通勤计算越准，如：福州市晋安区福兴大道3号'},
+    {name:'company',label:'公司名称',type:'text',placeholder:'如 字节跳动'},
+    {name:'position',label:'岗位名称',type:'text',placeholder:'如 前端开发工程师'},
+    {name:'address',label:'公司地址',type:'text',placeholder:'如：福州市晋安区福兴大道3号'},
+    {name:'date',label:'日期',type:'date'},
+    {name:'status',label:'状态',type:'select',options:['待面试','已投递','面试中','已通过','已拒绝'],default:'待面试'},
+    {name:'note',label:'通勤备注',type:'textarea',placeholder:'可选：通勤时长、交通方式、面试感受等自由记录',full:true},
   ],
 };
 
@@ -4223,7 +4199,8 @@ function openModal(type,id){
   cfg.forEach(f=>{
     html+=`<div class="form-group ${f.full?'full':''}"><label>${f.label}</label>`;
     if(f.type==='select'){
-      html+=`<select id="fm_${f.name}">${f.options.map(o=>`<option value="${o}" ${(data[f.name]||'')===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      const cur=data[f.name]||f.default||'';
+      html+=`<select id="fm_${f.name}">${f.options.map(o=>`<option value="${o}" ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
     }else if(f.type==='textarea'){
       html+=`<textarea id="fm_${f.name}" placeholder="${f.placeholder||''}">${esc(data[f.name]||'')}</textarea>`;
     }else{
@@ -4483,34 +4460,17 @@ function renderTravels(){
 }
 
 /* 求职通勤 */
-let commuteMap=null, commuteAmapLoading=null;
-let commuteLastCalc={home:'',job:null};
-
 function getCommuteJobs(){return getData(STORE_KEYS.commute);}
 function getCommuteHome(){try{return localStorage.getItem(STORE_KEYS.commuteHome)||'';}catch(e){return '';}}
 
-function loadAMapScript(){
-  if(window.AMap&&AMap.Map)return Promise.resolve();
-  if(commuteAmapLoading)return commuteAmapLoading;
-  commuteAmapLoading=new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    let url=AMAP_BASE_URL+'&key='+encodeURIComponent(AMAP_KEY)+'&plugin='+encodeURIComponent(AMAP_PLUGINS);
-    if(SECURITY_JS_CODE)url+='&securityJsCode='+encodeURIComponent(SECURITY_JS_CODE);
-    s.src=url;
-    s.onload=()=>{commuteAmapLoading=null;resolve();};
-    s.onerror=()=>{commuteAmapLoading=null;reject(new Error('AMap 脚本加载失败'));};
-    document.head.appendChild(s);
-  });
-  return commuteAmapLoading;
-}
-
 function saveCommuteHome(){
-  const v=(document.getElementById('commuteHomeInput').value||'').trim();
-  if(!v){toast('请先输入家庭住址');return;}
-  localStorage.setItem(STORE_KEYS.commuteHome,v);
+  const inp=document.getElementById('commuteHomeInput');
+  if(!inp)return;
+  const v=(inp.value||'').trim();
+  if(!v){toast('请先输入家庭地址');return;}
+  try{localStorage.setItem(STORE_KEYS.commuteHome,v);}catch(e){toast('保存失败');return;}
   renderCommuteHome();
-  const card=document.getElementById('commuteResultCard');if(card)card.style.display='none';
-  toast('家庭住址已保存');
+  toast('家庭地址已保存');
 }
 
 function renderCommuteHome(){
@@ -4518,28 +4478,28 @@ function renderCommuteHome(){
   const home=getCommuteHome();
   const inp=document.getElementById('commuteHomeInput');
   if(inp&&document.activeElement!==inp)inp.value=home;
-  st.innerHTML=home?'当前起点：<b>'+esc(home)+'</b>（通勤将以它为起点计算）':'尚未设置家庭住址，请输入地址并保存';
+  if(st)st.innerHTML=home?'已记录：<b>'+esc(home)+'</b>':'尚未设置家庭地址，输入后点“保存”即可';
 }
 
 function renderCommuteJobs(){
-  const kw=(document.getElementById('commuteSearch').value||'').toLowerCase();
-  const list=getCommuteJobs().filter(j=>(j.company||'').toLowerCase().includes(kw)||(j.position||'').toLowerCase().includes(kw)||(j.address||'').toLowerCase().includes(kw));
   const box=document.getElementById('commuteJobsList');
+  if(!box)return;
+  const kw=((document.getElementById('commuteSearch')||{}).value||'').toLowerCase();
+  const list=getCommuteJobs().filter(j=>(j.company||'').toLowerCase().includes(kw)||(j.position||'').toLowerCase().includes(kw)||(j.address||'').toLowerCase().includes(kw)||(j.note||'').toLowerCase().includes(kw));
   if(!list.length){box.innerHTML=emptyState('💼','暂无面试岗位','点击"添加岗位"记录第一家面试公司');return;}
+  const stColor={待面试:'#d4944f',已投递:'#3a6fa3',面试中:'#6aa86a',已通过:'#2e8b57',已拒绝:'#c05656'};
   box.innerHTML=list.map(j=>{
-    const last=j.last&&j.last.at
-      ?`<div class="tag" style="margin-top:8px">上次 ${j.last.mode==='driving'?'🚗 驾车':'🚌 公交'} ${j.last.km==null?'-':j.last.km}km · ${j.last.minutes==null?'-':j.last.minutes}分钟</div>`
-      :'';
-    return `<div class="data-card">
+    const status=j.status?'<span class="commute-status" style="background:'+(stColor[j.status]||'var(--mist)')+'">'+esc(j.status)+'</span>':'';
+    const date=j.date?esc(fmtDate(j.date)):'';
+    const meta=[status,date].filter(Boolean).join('<span class="dot">·</span>');
+    const note=(j.note||'').trim()?`<div class="commute-job-note">${esc(j.note)}</div>`:'';
+    return `<div class="data-card" onclick="openModal('commute',${j.id})">
       <div class="thumb">🏢</div>
       <div class="body">
-        <div class="title">${esc(j.company||'未命名公司')} · ${esc(j.position||'')}</div>
+        <div class="title">${esc(j.company||'未命名公司')}${j.position?' · '+esc(j.position):''}</div>
+        <div class="commute-meta">${meta||'&nbsp;'}</div>
         <div class="commute-job-addr">📍 ${esc(j.address||'未填写地址')}</div>
-        <div class="commute-btns">
-          <button class="btn p" onclick="event.stopPropagation();calcCommute(${j.id},'driving')">🚗 驾车通勤</button>
-          <button class="btn" onclick="event.stopPropagation();calcCommute(${j.id},'transit')">🚌 公交通勤</button>
-        </div>
-        ${last}
+        ${note}
       </div>
       <div class="actions">
         <div class="act" onclick="event.stopPropagation();openModal('commute',${j.id})"><i class="fa-solid fa-pen"></i></div>
@@ -4547,107 +4507,6 @@ function renderCommuteJobs(){
       </div>
     </div>`;
   }).join('');
-}
-
-function calcCommute(jobId,mode){
-  const home=getCommuteHome().trim();
-  if(!home){toast('请先设置家庭住址');return;}
-  const job=getCommuteJobs().find(x=>x.id===jobId);
-  if(!job)return;
-  if(!(job.address||'').trim()){toast('请先填写公司地址');return;}
-  commuteLastCalc={home,job,modeLabel:(mode==='driving'?'🚗 驾车':'🚌 公交')+' · '+(job.company||'')+(job.position?' '+job.position:'')};
-  showCommuteState('正在解析地址…');
-  loadAMapScript().then(()=>{
-    const geocoder=new AMap.Geocoder({city:'全国'});
-    Promise.all([
-      new Promise(res=>{geocoder.getLocation(home,(status,result)=>{try{res((status==='complete'&&result.geocodes&&result.geocodes[0])?result.geocodes[0]:null);}catch(e){res(null);}});}),
-      new Promise(res=>{geocoder.getLocation(job.address,(status,result)=>{try{res((status==='complete'&&result.geocodes&&result.geocodes[0])?result.geocodes[0]:null);}catch(e){res(null);}});})
-    ]).then(([start,end])=>{
-      if(!start||!end||!start.location||!end.location){showCommuteFail('地址解析失败：请补充更详细地址后重试');toast('地址解析失败，请完善地址');return;}
-      showCommuteState('正在规划路线…');
-      initCommuteMap().then(map=>{
-        if(!map){showCommuteFail('地图初始化失败，请检查网络与 Key 配置');return;}
-        commuteMap.clearMap();
-        if(mode==='driving')calcDriving(start.location,end.location,job);
-        else calcTransit(start.location,end.location,end,start,job);
-      });
-    });
-  }).catch(err=>{
-    console.error(err);
-    showCommuteFail('高德地图脚本加载失败：请检查网络或 SECURITY_JS_CODE 配置');
-    toast('高德地图加载失败');
-  });
-}
-
-function showCommuteState(msg){
-  const card=document.getElementById('commuteResultCard');card.style.display='block';
-  const job=commuteLastCalc.job||{};
-  document.getElementById('commuteResultMode').textContent=commuteLastCalc.modeLabel||'通勤计算';
-  document.getElementById('commuteResultStats').innerHTML=`<div class="commute-stat"><div class="k">计算状态</div><div class="v" style="font-size:15px">${msg}</div></div>`;
-  document.getElementById('commuteResultNote').innerHTML=`起点：<b>${esc(commuteLastCalc.home)}</b><br>终点：<b>${esc(job.address||'')}</b>`;
-  const tip=document.getElementById('commuteMap');
-  if(!commuteMap)tip.innerHTML='<div class="map-tip">📍 正在初始化地图…</div>';
-}
-function showCommuteFail(msg){
-  const card=document.getElementById('commuteResultCard');card.style.display='block';
-  document.getElementById('commuteResultStats').innerHTML=`<div class="commute-stat"><div class="k">结果</div><div class="v" style="font-size:15px;color:#c05656">${msg}</div></div>`;
-}
-function initCommuteMap(){
-  const card=document.getElementById('commuteResultCard');
-  const el=document.getElementById('commuteMap');
-  if(commuteMap)return Promise.resolve(commuteMap);
-  return new Promise(res=>{
-    setTimeout(()=>{
-      try{commuteMap=new AMap.Map(el,{zoom:13,resizeEnable:true});}catch(e){console.error('AMap.Map init error',e);}
-      res(commuteMap);
-    },60);
-  });
-}
-function calcDriving(start,end,job){
-  const driving=new AMap.Driving({map:commuteMap,policy:AMap.DrivingPolicy.LEAST_TIME});
-  driving.search(start,end,(status,result)=>{
-    if(status==='complete'&&result.routes&&result.routes.length){
-      const r=result.routes[0];
-      saveCommuteResult(job.id,'driving',r.distance,r.time);
-    }else{
-      showCommuteFail('驾车路线规划失败：请检查地址准确性后重试');
-      toast('驾车路线规划失败');
-    }
-  });
-}
-function calcTransit(start,end,endGeo,startGeo,job){
-  const city=endGeo.city||startGeo.city;
-  if(!city){
-    showCommuteFail('公交规划失败：无法识别所在城市，请在地址中补充市区信息');
-    toast('无法识别城市，请补充市区后重试');
-    return;
-  }
-  const transfer=new AMap.Transfer({map:commuteMap,city,policy:AMap.TransferPolicy.LEAST_TIME});
-  transfer.search(start,end,(status,result)=>{
-    if(status==='complete'&&result.plans&&result.plans.length){
-      const p=result.plans[0];
-      saveCommuteResult(job.id,'transit',p.distance,p.time);
-    }else{
-      showCommuteFail('公交路线规划失败：请尝试驾车方案');
-      toast('公交路线规划失败');
-    }
-  });
-}
-function saveCommuteResult(jobId,mode,distanceM,timeS){
-  const jobs=getCommuteJobs();
-  const job=jobs.find(x=>x.id===jobId);
-  if(!job)return;
-  const km=distanceM!=null?Math.round(distanceM/1000*10)/10:null;
-  const minutes=timeS!=null?Math.ceil(timeS/60):null;
-  job.last={mode,km,minutes,at:Date.now()};
-  saveData(STORE_KEYS.commute,jobs);
-  const modeName=mode==='driving'?'🚗 驾车':'🚌 公交';
-  document.getElementById('commuteResultMode').textContent=modeName+' · '+job.company+(job.position?' '+job.position:'');
-  document.getElementById('commuteResultStats').innerHTML=
-    `<div class="commute-stat"><div class="k">路线距离</div><div class="v">${km==null?'-':km} km</div></div>`+
-    `<div class="commute-stat"><div class="k">预计时间</div><div class="v">${minutes==null?'-':minutes} 分钟</div></div>`;
-  renderCommuteJobs();
-  toast(modeName+' 通勤约 '+minutes+' 分钟');
 }
 
 /* 导入导出 */
